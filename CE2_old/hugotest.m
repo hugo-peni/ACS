@@ -1,3 +1,4 @@
+
 clear ; close ; clc ;
 
 load('data1.mat')
@@ -23,15 +24,7 @@ Gf1 = spa(data1, 400) ;             %non parametric
 
 %% 
 
-compare( G1 , data1 )
+compare( G1 , data1(1:250 , : ) )
 
-%%
 
-load('data1.mat', 'tt8');
-
-%%
-
-load data1.mat tt8
-tt8e = tt8(1:250,:);
-tt8v = tt8(251:end,:);
 
