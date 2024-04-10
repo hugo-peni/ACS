@@ -33,7 +33,6 @@ PAR = datadrivenOptions('Kc',K_red,'order',5,...
                         'sdpsettings',opt,...
                         'max_iteration',10); 
 
-                    
 %%                    
 K_optimal = datadriven_ACS(Gmm, OBJ, CON, PAR) ; 
 

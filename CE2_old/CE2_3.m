@@ -29,15 +29,15 @@ K = mixsyn(tf(Gnom),W1z,W3,W2) ;
 % Define the CL transfer functions
 S=feedback(1,Gmm*K) ; T=feedback(Gmm*K,1) ; U=feedback(K,Gmm) ; 
 
-% Plot CL step response
-% figure ; bodemag(S) ; grid on ; title('Sensitivity functions S')
-% figure ; bodemag(U) ; grid on ; title('Input sensitivity functions U')
-% figure ; step(T) ; grid on ; legend('Step response closed loop') ;
-% figure ; step(U) ; grid on ; legend('Control signal') ; 
+%Plot CL step response
+figure ; bodemag(S) ; grid on ; title('Sensitivity functions S') ;
+figure ; bodemag(U) ; grid on ; title('Input sensitivity functions U') ;
+figure ; step(T) ; grid on ; legend('Step response closed loop') ;
+figure ; step(U) ; grid on ; legend('Control signal') ; 
 
 % figure;
-% subplot(2, 2, 1);bodemag(S);grid on;title('Sensitivity functions S');
-% subplot(2, 2, 2);bodemag(U);grid on;title('Input sensitivity functions U');
+% subplot(2, 2, 1);bodemag(S);grid on;title('Sensitivity functions S') ;
+% subplot(2, 2, 2);bodemag(U);grid on;title('Input sensitivity functions 'U')
 % subplot(2, 2, 3);step(T);grid on; legend('Step response closed loop');
 % subplot(2, 2, 4);step(U);grid on;legend('Control signal');
 
@@ -99,17 +99,19 @@ K_pid_init = pid(1e-2, 1e-5 ,1e-5, Ts, Ts);
 fprintf('Settling times with initial pid controller : %.2fs, %.2fs, %.2fs, %.2fs \n',stepinfo(feedback(G1*K_pid_init,1)).SettlingTime,stepinfo(feedback(G2*K_pid_init,1)).SettlingTime,stepinfo(feedback(G3*K_pid_init,1)).SettlingTime,stepinfo(feedback(G4*K_pid_init,1)).SettlingTime)
 % step(feedback(Gmm*K_pid_init,1)) ; grid on ; 
 %%
-CON_pid = struct('W1',W1s,'W2',W3,'W3', []); % H infinity constraints
-OBJ_pid = struct('W1',1,'W2',[] ,'W3',[],'norm','two'); % Objectives to minimize
 
-opt = sdpsettings('solver','mosek','verbose',0); % YALMIP settings
+CON_pid = struct('W1',W1s,'W2',W3,'W3', []) ; % H infinity constraints
+OBJ_pid = struct('W1',1,'W2',[] ,'W3',[],'norm','two') ; % Objectives to minimize
+
+opt = sdpsettings('solver','mosek','verbose',0) ; % YALMIP settings
 PAR_pid = datadrivenOptions('Kc',K_pid_init,'order',2,...
                         'W',W, ...
                         'force_integrator',0,... 
                         'sdpsettings',opt,...
-                        'max_iteration',10); 
+                        'max_iteration',10) ; 
                     
-K_pid = datadriven_ACS(Gmm,OBJ_pid,CON_pid,PAR_pid);
+K_pid = datadriven_ACS(Gmm,OBJ_pid,CON_pid,PAR_pid) ;
+
 %%
 S_pid=feedback(1,Gmm*K_pid) ; T_pid=feedback(Gmm*K_pid,1) ; U_pid=feedback(K_pid,Gmm) ; 
 figure ; step(U_pid) ; grid on ; legend('Control signal with datadriven controller') ; 

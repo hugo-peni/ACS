@@ -45,16 +45,16 @@ end
 
 %%
 
-[~, info1] = ucover( G , G(:,:,1,:) , 1 ) ;
-W_current = info1.W1opt ; 
-n_inf_current = norm( info1.W1opt , inf ) ; 
+[~, info1] = ucover( G , G(:,:,1,:) , 4 ) ;
+W_current = info1.W1 ; 
+n_inf_current = norm( info1.W1 , inf ) ; 
 
 W = stack( 1 , W_current ) ; 
 n_inf = n_inf_current ; 
 
 for i = 2:length(G)
-    [~, info1] = ucover( G , G(:,:,i,:) , 1 ) ;
-    W_current = info1.W1opt ;  
+    [~, info1] = ucover( G , G(:,:,i,:) , 4 ) ;
+    W_current = info1.W1 ;  
     n_inf_current = norm( info1.W1opt , inf ) ; 
     W = stack( 1 , W , W_current ) ; 
     n_inf = [ n_inf , n_inf_current ] ;
