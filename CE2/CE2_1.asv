@@ -1,6 +1,7 @@
 
 clear all ; 
 close all ; 
+
 clc ; 
 
 %% miscellaneous varibales and plotting setup 
@@ -40,8 +41,23 @@ figure(1)
 
 for i = 1:length(G)
     subplot( 2 , 3 , i )
-    nyquistplot( G(:,:,i,:) , Gf(:,:,i,:) , opts , 'sd' , 2.45 ) ; 
+    nyquistplot( Gf(:,:,i,:) , G(:,:,i,:) , freqs , opts , 'sd ', 2.45 ) ;
 end
+%%
+i = 1
+nyquistplot( Gf(:,:,i,:) , G(:,:,i,:) , freqs , opts , 'sd ', 2.45 ) ;
+%%
+% P = nyquistoptions; 
+% P.ConfidenceRegionDisplaySpacing=1; 
+% P.ShowFullContour='off';
+% figure();
+% subplot(121) 
+% nyquistplot(G2,Gf2,P,'sd',2); 
+% subplot(122)
+% P.Xlim=[45, 50]; P.Ylim=[-30, 5]; 
+% h=nyquistplot(G2,Gf2,P,'sd',2); 
+% title('Zoom in Nyquist Diagram') ; 
+% axis equal
 
 %%
 
