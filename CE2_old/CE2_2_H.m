@@ -2,10 +2,10 @@ clear ; close ; clc ;
 
 load("data1.mat")
 
-G1 = bj(data1, [5, 5, 5, 5, 1]);
-G1_C = d2c(G1);
+G1 = bj(data1, [5, 5, 5, 5, 1]) ;
+G1_C = d2c(G1) ;
 
-[A,B,C,D] = ssdata(G1_C);
+[A,B,C,D] = ssdata(G1_C) ;
 
 % Define the decision variables
 n = size(A,1);
