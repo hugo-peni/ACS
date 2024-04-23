@@ -67,7 +67,9 @@ for i = 1:length(G)
     nom_S = strcat( 'G / Gnom' , num2str( i ) , ' - 1' ) ;
     W_S = strcat( 'W_2_' , num2str( i ) ) ;
     subplot(3, 2, i)
-    bodemag( G / G(:,:,i,:) - 1 , W(:,:,i,:) ) ; grid on ; legend( nom_S , W_S ) ; 
+    G_disp=G;
+    G_disp(:,:,i,:)=[];
+    bodemag( G_disp / G(:,:,i,:) - 1 , W(:,:,i,:) ) ; grid on ; legend( nom_S , strcat(W_S) ) ;
     title( strcat( 'norm_inf(', W_S , ') = ', num2str( n_inf(i) ) ) )
 end
 

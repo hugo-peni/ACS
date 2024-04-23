@@ -5,11 +5,19 @@ load('data1.mat') ; load('data2.mat') ; load('data3.mat') ; load('data4.mat') ;
 G1=bj(data1, [5,5,5,5,1]) ; G2=bj(data2, [5,5,5,5,1]) ; G3=bj(data3, [5,5,5,5,1]) ;G4=bj(data4, [5,5,5,5,1]);
 Gmm = stack(3, G1, G2, G3, G4) ; 
 
+%%
 % Compute W2 in discrete time
 Gnom = G1 ; 
 [Gu, info] = ucover(Gmm, Gnom, 4) ;
 W2=info.W1 ; 
+
+figure()
+err1 = Gmm/Gnom - 1 ; 
+bodemag(err1,W2) ; grid on ; legend('Gmm/Gnom1 - 1','W_2,1')
+
+%%
 % Define the weighting filter W1(s) in continuous time
+
 s = tf('s') ; m = 0.5 ; omega_b = 10 ; 
 W1s = m * (s+omega_b) / (s+1e-5) ; 
 % Convert to discrete time using zero-order hold
@@ -18,8 +26,13 @@ W1z = c2d(W1s, Ts, 'zoh');
 
 % Check the magnitude of W1^-1(s) at high frequencies
 [mag, ~] = bode(W1s^-1, 100); magdB = 20*log10(mag) ; 
-% fprintf('Magnitude of W1(s)^-1 at high frequencies : %.2f dB\n',magdB) ; 
 
+figure();
+bode(W1s^-1);
+
+fprintf('Magnitude of W1(s)^-1 at high frequencies : %.2f dB\n',magdB) ; 
+
+%%
 % Reduce magnitude of u(t) with W3
 W3 = 4.5 ; 
 
@@ -43,6 +56,7 @@ figure ; step(U) ; grid on ; legend('Control signal') ;
 
 fprintf('Settling times with initial controller : %.2fs, %.2fs, %.2fs, %.2fs \n',stepinfo(feedback(G1*K,1)).SettlingTime,stepinfo(feedback(G2*K,1)).SettlingTime,stepinfo(feedback(G3*K,1)).SettlingTime,stepinfo(feedback(G4*K,1)).SettlingTime)
 fprintf('Overshoot with initial controller : %.2f, %.2f, %.2f, %.2f \n',stepinfo(feedback(G1*K,1)).Overshoot,stepinfo(feedback(G2*K,1)).Overshoot,stepinfo(feedback(G3*K,1)).Overshoot,stepinfo(feedback(G4*K,1)).Overshoot)
+
 %%
 %Reduce the order of the controller 
 % pzmap(K)
@@ -60,8 +74,10 @@ S_red=feedback(1,Gmm*K_red) ; T_red=feedback(Gmm*K_red,1) ; U_red=feedback(K_red
 
 fprintf('Settling times with controller %d : %.2fs, %.2fs, %.2fs, %.2fs \n',order(K_red),stepinfo(feedback(G1*K_red,1)).SettlingTime,stepinfo(feedback(G2*K_red,1)).SettlingTime,stepinfo(feedback(G3*K_red,1)).SettlingTime,stepinfo(feedback(G4*K_red,1)).SettlingTime)
 fprintf('Overshoot with controller %d : %.2f, %.2f, %.2f, %.2f \n',order(K_red),stepinfo(feedback(G1*K_red,1)).Overshoot,stepinfo(feedback(G2*K_red,1)).Overshoot,stepinfo(feedback(G3*K_red,1)).Overshoot,stepinfo(feedback(G4*K_red,1)).Overshoot)
+
 %% Closed loop norm of the objective 
 %Compute the CL norm
+
 cl_sys_nom = [W1z * feedback(1,Gnom*K_red) ; W3*feedback(K_red,Gnom)] ; 
 cl_sys = [W1z * S_red ; W3*U_red] ; 
 
@@ -69,6 +85,8 @@ cl_norm_nom = norm(cl_sys_nom, Inf) ;
 fprintf('Closed loop norm with nominal model : %.4f\n', cl_norm_nom) ; 
 cl_norm_mm = norm(cl_sys, Inf) ;
 fprintf('Closed loop norm with multimodel : %.4f\n', cl_norm_mm) ;
+
+
 %% Ex 2.4
 G = cat(3,G1,G2,G3,G4) ; 
 
@@ -93,6 +111,7 @@ figure ; step(T) ; grid on ; hold on ; step(T_red) ; step(T_dd) ; legend('Initia
 fprintf('Settling times with reduced controller : %.2fs, %.2fs, %.2fs, %.2fs \n',stepinfo(feedback(G1*K_dd,1)).SettlingTime,stepinfo(feedback(G2*K_dd,1)).SettlingTime,stepinfo(feedback(G3*K_dd,1)).SettlingTime,stepinfo(feedback(G4*K_dd,1)).SettlingTime)
 fprintf('Overshoot with datadriven controller : %.2f, %.2f, %.2f, %.2f \n',stepinfo(feedback(G1*K_dd,1)).Overshoot,stepinfo(feedback(G2*K_dd,1)).Overshoot,stepinfo(feedback(G3*K_dd,1)).Overshoot,stepinfo(feedback(G4*K_dd,1)).Overshoot)
 %% 2.4.2
+
 clc
 K_pid_init = pid(1e-2, 1e-5 ,1e-5, Ts, Ts);
 

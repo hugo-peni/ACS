@@ -65,7 +65,7 @@ OBJ = struct('W1',1,'W2',[] ,'W3',[],'norm','two'); % Objectives to minimize
 Kc = pid(0, -1, 0, 0, Ts);
 W = logspace(-2,log10(pi/Ts),1000); % Frequency grid at which we solve the problem
 
-opt = sdpsettings('solver','gurobi','verbose',0); % YALMIP settings
+opt = sdpsettings('solver','mosek','verbose',0); % YALMIP settings
 
 PAR = datadrivenOptions('Kc',Kc,'order',3,...
                         'W',W, ...
