@@ -23,117 +23,129 @@ if( exist( full_file_path , 'file') == 0 )
     save( 'G.mat' , 'G' );
 end
 
+clear current_folder_path
+clear files 
+load( 'G.mat' )
 
-% nom_model = G1 ; 
-% 
-% [B, A] = tfdata( nom_model , 'v' ) ; 
-% T1s = nom_model.Ts ; 
+chosen_nominal_model = 6 ; 
+nom_model = G(:,:,chosen_nominal_model,1) ; % take model 4 as the nominal model 
+
+[B, A] = tfdata( nom_model , 'v' ) ; 
+Ts = nom_model.Ts ; 
 
 
 %%
 
-Pideal = [0.8, 0.9 , 0.95] ; 
-%Pideal = [1 , 0.95, 0.95 , 0.99] ; 
-%Pideal = [0.95, 0.95 , 0.99] ; 
+type = "poles_1" ; 
 
-Pchar = poly( Pideal ) ; 
+if( type == "poles_1" )
+    Pideal = poly([0.8, 0.9 , 0.95]) ;
+elseif( type == "poles_2")
+    Pideal = poly([0.95, 0.95 , 0.99]) ; 
+end
 
 Hs = [1 , -1 ] ; 
-Hr = [1 , 1 ] ; 
 %Hr = 1 ; 
-
-% Hs = [ 1 , Beta , 1 ]
-% Hr = [ 1 , Beta ] ; 
-
-% [R,S]=poleplace(B,A,Hr,Hs,Pideal) ; 
-[R,S]=poleplace(B,A,Hr,Hs, Pchar ) ; 
-
-fprintf("--R----\n")
-disp(R)
-fprintf("--S----\n")
-disp(S)
+Hr = [1 , 1 ] ; 
 
 
-% clc ; 
-% 
+[R,S]=poleplace(B,A,Hr,Hs, Pideal ) ; 
 Pplaced = conv(A,S)+conv(B,R) ; 
-disp( Pplaced(1:3) )
 
-%T = R(1)
-%T = Pideal / B(2)
+disp( Pideal )
+disp( Pplaced(1:4) )
 
-%T = sum( Pchar ) / sum( B )
-T = Pchar(1) / B(2)
 
-CL=tf(conv(T,B),Pchar,Ts,'variable','z^-1')
+T = sum( Pplaced ) / sum( B ) ; 
 
-[Y,time] = step(CL) ;
-crop = length( time ) / 20 ; 
+CL = tf(conv(T,B),Pplaced,Ts,'variable','z^-1') ; 
 
 figure(1)
-%plot( time(1:crop) , Y(1:crop) )
 step( CL )
 
-U=tf(conv(A,R),Pchar,Ts,'variable','z^-1')
+U = tf(conv(A,R),Pplaced,Ts,'variable','z^-1') ; 
 
 figure(2)
 step( U )
 
 
-%%
+%% Q-parametrization to complete 
 
-Fs = 1 / Ts ; 
-L = length( Y(1:crop) ) ; 
-
-f = Fs/L*(0:(L/2)) ;
-
-Y = fft(Y(1:crop)) ;
-
-P2 = abs(Y/L) ;
-P1 = P2(1:L/2+1) ;
-P1(2:end-1) = 2*P1(2:end-1) ;
-
-figure(90)
-plot(f,P1,"LineWidth",3) 
-
-
-f_max = f( find( P1 == max( P1 ) ) )
-
-Beta = -2 * cos( 2*pi * f_max / Fs ) ; 
-
-save("coeff.mat", "Beta")
-
-
-%% Q-parametrization
-% exportgraphics(gcf,'Figures/CompInitImpr.png','Resolution',500)
-
-%% Q-parametrization
-
-%compute the filters W1 and W2
-% Define the weighting filter W1(s) in continuous time
 s = tf('s') ; m = 0.5 ; omega_b = 10 ; 
 W1s = m * (s+omega_b) / (s+1e-5) ; 
 % Convert to discrete time using zero-order hold
 Ts = 0.01 ; 
 W1z = c2d(W1s, Ts, 'zoh'); 
 
-% Load data & models
-load('data1.mat') ; load('data3.mat') ; load('data4.mat') ; 
-G1=bj(data1, [5,5,5,5,1]) ; G3=bj(data3, [5,5,5,5,1]) ;G4=bj(data4, [5,5,5,5,1]);
-Gmm = stack(3, G1, G2, G3, G4) ; 
 % Compute W2 in discrete time
-[~, info] = ucover(Gmm, G2, 4) ;
+[~, info] = ucover(G, G(:,:,chosen_nominal_model,:) , 7) ;
 W2=info.W1 ; 
 
-%% Q-parametrization
 
 fprintf('\n') ; 
-orderQinit = 4 ; %Can be changed (between 3 and 6 maybe) 
-Q_init = -1 + 2.*rand(1,orderQinit+1) ;  
+orderQinit = 9 ; %Can be changed (between 3 and 6 maybe) 
+Q_init = -1 + 2.*rand(1,orderQinit+1) ; 
+
+
+%%
 options = optimoptions('fmincon', 'Display', 'iter'); 
 options.MaxFunctionEvaluations = Inf ; 
 options.MaxIterations = 10000 ; 
-obj = @(Q) define_objective( A , B , S_improved , Q , P_improved , W1z , W2 , Ts ) ;
+obj = @(Q) define_objective( A , B , S , Q , Pplaced , W1z , W2 , Ts ) ;
+
+%call solver
+[Q,~,~,OUTPUT] = fmincon(obj, Q_init, [], [], [], [], [], [], @constraint, options);
+Q_best = OUTPUT.bestfeasible
+
  
+
+%% 
+
+
+function obj = define_objective(A,B,S,Q,P,W1,W2,Ts)
+    num = conv(A,diff_coeff(S,conv(B,Q))) ; 
+    den = P ; 
+    SensS = tf(num,den,Ts, 'variable','z^-1') ;
+    obj = norm(W1*SensS,Inf) + norm(W2*(1-SensS),Inf) ; 
+end
+
+function SensS_Inf = define_SensS(A,B, S,Q,P, Ts)
+    %returns the inf norm of SensS in dB
+    num = conv(A,diff_coeff(S,conv(B,Q))) ; 
+    den = P ; 
+    SensS_Inf = 20*log10(norm(tf(num,den,Ts, 'variable','z^-1'),Inf)) ;
+end
+
+function SensU_Inf = define_SensU(A,R, Q,P, Ts)
+    %return the inf norm of SensU in dB
+    num = conv(A,diff_coeff(R,-conv(A,Q))) ; 
+    den = P ; 
+    SensU_Inf = 20*log10(norm(tf(num,den,Ts, 'variable','z^-1'),Inf)) ;
+end
+
+function diff = diff_coeff(array1, array2)
+    % Determine the lengths of the input arrays
+    len1 = length(array1); len2 = length(array2);
+    % Calculate the difference in lengths
+    diff_len =abs((len1 - len2));
+    
+    if diff_len == 0
+        diff = array1-array2 ;
+    % Pad the shorter array with zeros
+    elseif len1 > len2
+        diff  = array1 - [array2, zeros(1, diff_len)]; 
+    else
+        diff = [array1, zeros(1, diff_len)] - array2; 
+    end
+end
+
+
+function [c, ceq] = constraint(Q, A, B, S, R, Ts ) 
+    SensS_Inf = define_SensS(A, B, S , Q, P , Ts);
+    SensU_Inf = define_SensU(A, R , Q, P , Ts);
+    c = [SensS_Inf - 6; SensU_Inf + 10];  % Inequality constraints
+    %S<6dB & U<-10dB
+    ceq = [];                                               % No equality constraints
+end
 
 
